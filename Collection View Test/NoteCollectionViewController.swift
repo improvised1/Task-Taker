@@ -30,6 +30,11 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        //reloading the collection view whenver the app is opened or its orientation changed (since cell size dependent on screen width, need to re-load cells when orientation and width changes)
+        NotificationCenter.default.addObserver(self, selector: #selector(actionsForEneringForeground), name: .UIApplicationWillEnterForeground , object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(actionsForOrientationChange), name: .UIDeviceOrientationDidChange , object: nil)
+
+        
         // Uncomment the following line to preserve selection between presentations
         // self.clearsSelectionOnViewWillAppear = false
         
@@ -61,14 +66,24 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         notesIntoHeaders()
         addDefaultNotes()
         
-        os_log("started running", log: OSLog.default, type: .debug)        
     }
-
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
 
+    //Was registered an as observer for UIApplicationWillEnterForeground in viewDidLoad
+    func actionsForEneringForeground() {
+        print("notification received, running actionsForEneringForeground() method")
+        notesIntoHeaders()  //need to run this method to move any checked notes out of its headers notes variable
+        self.collectionView?.reloadData()
+    }
+    
+    func actionsForOrientationChange() {
+        print("notification received, running actionsForOrientationChange() method")
+        self.collectionView?.reloadData()
+    }
     
     // MARK: - Navigation
 
@@ -184,8 +199,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
             
         } else if let sourceViewController = sender.source as? NoteViewController {
             
-            os_log("unwindToReminderList in NoteViewController started running", log: OSLog.default, type: .debug)
-            
             let newNote = sourceViewController.note
             
             //finding the note with the same identity as the modified one, and changing that note to the modified one
@@ -210,7 +223,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
             notesIntoHeaders()
             addDefaultNotes()
             
-            os_log("----- reloading data -----", log: OSLog.default, type: .debug)
             self.collectionView?.reloadData()
             
             //save the notes
@@ -252,8 +264,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
 
     //configures the cell
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        
-        //os_log("method (cell configurator) started running", log: OSLog.default, type: .debug)
         
         let dateFormatter = DateFormatter()
         dateFormatter.dateStyle = DateFormatter.Style.medium
@@ -354,10 +364,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     
     //MARK: UITextFieldDelegate
     
-    func textFieldDidBeginEditing(_ textField: UITextField) {
-        os_log("textFieldDIdBeginEditing in main view ran", log: OSLog.default, type: .debug)
-    }
-    
     //not entirely sure if this can be merged into textFieldDidEndEditing, but is neccessary to resign first reponder status
     func textFieldShouldReturn(_ textField: UITextField) -> Bool {
         // Hide the keyboard.
@@ -368,8 +374,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     //Will activate when you finish editing a text field
     //will save the new note and see if a new empty/default one neeeds to be added to the end
     func textFieldDidEndEditing(_ textField: UITextField) {
-        
-        os_log("textFieldDIidEndEditing in main view began running", log: OSLog.default, type: .debug)
         
         //finding the identity of the note used in this textField
         let cell = textField.superview?.superview as! NoteCollectionViewCell
@@ -394,7 +398,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
                 }
             }
             
-            print("selectedNote.hasDate: " + (selectedNote?.hasDate.description)!)
             //determining if the header the note is in has a date, and if so assigning it an activation date correlating to its headers activation date
             if !(selectedNote?.hasDate)! {
                 
@@ -403,17 +406,11 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
                 
                 for tempHeader in headers {
                     
-                    print("am here")
-                    
                     if (selectedNote?.headerIdentity == tempHeader.identity) {
-                        
-                        print("found matching header")
-                        print("tempHeader.hasDate, .hasFar, .hasForever: " + tempHeader.hasDate.description + ", " + tempHeader.hasFar.description + ", " + tempHeader.hasForever.description)
                         
                         //if the header has a date, but dosent hold a range of dates
                         if (tempHeader.hasDate && !tempHeader.hasFar && !tempHeader.hasForever) {
                             
-                            print("assigning activation date")
                             headerNearDateComp = tempHeader.nearDate
                             headerNearDate = Calendar.current.date(byAdding: headerNearDateComp!, to: Date())!
                             selectedNote?.activationDate = headerNearDate
@@ -508,8 +505,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     //
     func notesIntoHeaders() {
         
-        os_log("method (notesToHeaders) started running", log: OSLog.default, type: .debug)
-        
         var addedNote = false   //new notes can be created in the following loop, if so we need to save notes at the end.  This tracks if we have to do that
         
         /*
@@ -577,8 +572,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
      Is an unimportant feature and so skipped implementation, will implement later
     */
     func createHeadersSystem() {
-        
-        os_log("method (createHeadersSystem) started running", log: OSLog.default, type: .debug)
         
         switch headersSystem {
             
@@ -654,7 +647,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     //will update note identities to match the header with the same activation date
     func updateNoteIdentities() {
         
-        os_log("method (updateNoteIdentities) started running", log: OSLog.default, type: .debug)
         /*
          Will go through every headers index and every notes index and use the headers .matches method to see if the note belongs in that header
         */
@@ -855,8 +847,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     //has same problem as above
     func addDefaultNotes() {
         
-        os_log("method (addDefaultNotes) started running", log: OSLog.default, type: .debug)
-        
         /*
          will go through every header and check that the last note is empty.  If its not, add a new default note to that header
          */
@@ -1015,36 +1005,20 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     
     private func saveNotes() {
         
-        let isSuccessfulSave = NSKeyedArchiver.archiveRootObject(notes, toFile: Note.NotesArchiveURL.path)
-        
-        if isSuccessfulSave {
-            print("Notes successfully saved")
-        } else {
-            print("Failed to save notes")
-        }
+        NSKeyedArchiver.archiveRootObject(notes, toFile: Note.NotesArchiveURL.path)
         
     }
     
     private func saveCompletedNotes() {
     
-        let isSuccessfulSave = NSKeyedArchiver.archiveRootObject(completedNotes, toFile: Note.CompletedArchiveURL.path)
+        NSKeyedArchiver.archiveRootObject(completedNotes, toFile: Note.CompletedArchiveURL.path)
         
-        if isSuccessfulSave {
-            print("Completed Notes successfully saved")
-        } else {
-            print("Failed to save completed notes")
-        }
     }
     
     private func saveHeaders() {
         
-        let isSuccessfulSave = NSKeyedArchiver.archiveRootObject(headers, toFile: Header.ArchiveURL.path)
+       NSKeyedArchiver.archiveRootObject(headers, toFile: Header.ArchiveURL.path)
         
-        if isSuccessfulSave {
-            print("Notes successfully saved")
-        } else {
-            print("Failed to save notes")
-        }
     }
     
     private func loadNotes() -> [Note]? {

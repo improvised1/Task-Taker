@@ -100,7 +100,6 @@ class NoteViewController: UIViewController, UITextFieldDelegate {
         //will only continue past this point if the save button was pressed, otherwise give an error
         guard let button = sender as? UIBarButtonItem, button === saveButton else {
             
-            os_log("The save button was note pressed, cancelling", log: OSLog.default, type: .debug)
             return
             
         }

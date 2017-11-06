@@ -140,10 +140,8 @@ class Note: NSObject, NSCoding {
         //must call the designated initializer
         
         if (activationDate != nil) {
-            print("loading note as has date")
             self.init(text: text, headerIdentity: headerIdentity, identity: identity, activationDate: activationDate!, creationDate: creationDate!, checkboxClicked: checkboxClicked)
         } else {
-            print("loading note as has no date")
             self.init(text: text, headerIdentity: headerIdentity, identity: identity, creationDate: creationDate!, checkboxClicked: checkboxClicked)
         }
         

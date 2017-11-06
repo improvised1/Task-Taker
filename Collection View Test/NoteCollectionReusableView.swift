@@ -25,7 +25,6 @@ class NoteCollectionReusableView: UICollectionReusableView, UIGestureRecognizerD
     
     
     override func awakeFromNib() {
-        os_log("method (awakeFromNib) in reusableView started running", log: OSLog.default, type: .debug)
         
         super.awakeFromNib()
         
@@ -33,16 +32,12 @@ class NoteCollectionReusableView: UICollectionReusableView, UIGestureRecognizerD
         recognizer.delegate = self
         self.addGestureRecognizer(recognizer)
         
-        os_log("method (awakeFromNib stopped running", log: OSLog.default, type: .debug)
     }
     
     func headerSelected(recognizer: UITapGestureRecognizer) {
-        os_log("method (headerSelected) in reusableViewstarted running", log: OSLog.default, type: .debug)
         
         headerDataClass?.notesAreHidden = !(headerDataClass?.notesAreHidden)!
         parentView?.collectionView?.reloadData()
-        
-        os_log("method (headerSelected) stopped running", log: OSLog.default, type: .debug)
     
     }
     
