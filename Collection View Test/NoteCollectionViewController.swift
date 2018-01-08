@@ -9,34 +9,44 @@
 import UIKit
 import os.log
 
+/*
+ * Design notes
+ *
+ * Update Sequence
+ *      - You'll often see updateNoteIdentities(), notesIntoHeaders(), and addDefaultNotes() called right after eachother.  These methods are involved in updating the displayed notes and are called whenever data is changed and what is presented therefore needs to be changed as well.
+ */
 
 class NoteCollectionViewController: UICollectionViewController, UICollectionViewDelegateFlowLayout, UITextFieldDelegate {
-
+    
     //MARK: Properties
     let reuseIdentifier = "NoteCell"
-    let sectionInsets = UIEdgeInsetsMake(20, 20, 20, 20)    //top, left, bottom, right
+    let sectionInsets = UIEdgeInsetsMake(0, 20, 30, 20)    //top, left, bottom, right
     
     var notes = [Note]()
     var completedNotes = [Note]()
     var headers = [Header]()
-    
     var headersDisplayed = [Header]()
+    
     var openHeaderIdentity: Int?
     var openNoteIdentity: Int?
     let currentDate = Date()
     let formatter = DateFormatter()
     var headersSystem: Int?     //holds a # that corresponds to a headers date system, like today-tommorow-this week-later, or today-this week-later
     
+    /*
+     * viewDidLoad() method
+     * This method runs at startup, and does various actions to set everything up.  These actions are explained within the method.
+     */
     override func viewDidLoad() {
+        
         super.viewDidLoad()
+        
+        //setting background image
+        self.collectionView?.backgroundColor = UIColor(patternImage: #imageLiteral(resourceName: "background"))
         
         //reloading the collection view whenver the app is opened or its orientation changed (since cell size dependent on screen width, need to re-load cells when orientation and width changes)
         NotificationCenter.default.addObserver(self, selector: #selector(actionsForEneringForeground), name: .UIApplicationWillEnterForeground , object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(actionsForOrientationChange), name: .UIDeviceOrientationDidChange , object: nil)
-
-        
-        // Uncomment the following line to preserve selection between presentations
-        // self.clearsSelectionOnViewWillAppear = false
         
         //adds a slight inset for all content
         //I added this because the top header came right up to the navigation bar which looked bad, this creates an inset between content -> collection view, not content -> content, and so only adds an inset between the navigation bar and top header, as i wanted
@@ -73,21 +83,32 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         // Dispose of any resources that can be recreated.
     }
 
-    //Was registered an as observer for UIApplicationWillEnterForeground in viewDidLoad
-    func actionsForEneringForeground() {
-        print("notification received, running actionsForEneringForeground() method")
-        notesIntoHeaders()  //need to run this method to move any checked notes out of its headers notes variable
+    /*
+     * actionsForEnteringForeground() method
+     * This method was registered as an observer for UIApplicationWillEnterForeground in viewDidLoad.  This means that whenever the users takes this program out of the background and returns to using it, this method runs.  This method
+     * only calls notesIntoHeaders() to remove checked notes.  It's assumed that no date changes will occur when reloading from background rather then completely reloading.
+     */
+    @objc func actionsForEneringForeground() {
+        notesIntoHeaders()
         self.collectionView?.reloadData()
     }
     
-    func actionsForOrientationChange() {
-        print("notification received, running actionsForOrientationChange() method")
+    /*
+     * actionsForOrientationChange() method
+     * This method was registered as an observer for UIDeviceOrientationDidChange in viewDidLoad.  This means that whenever the user flips there phone, changing orientation, this method runs.  All cells in this program has a width set
+     * to be based off of the screen width, and when orientation flips that width changes, so we need to recalculate the size of every cell.
+     */
+    @objc func actionsForOrientationChange() {
         self.collectionView?.reloadData()
     }
     
     // MARK: - Navigation
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
+    /*
+     * prepare() method, for sender
+     * This method automatically runs when any segue occurs.  The screen we're transitioning to will often need to receive data from this screen, and this method transfers that data.  Exactly what data it transfers and why is explained
+     * in the switch-case statement for each segue type.
+     */
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
         super.prepare(for: segue, sender: sender)   //not sure what role this fills
@@ -120,7 +141,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
                 //filling variables in destination with correct values
                 destinationViewController.isEdit = true
                 destinationViewController.header = selectedHeader
-                destinationViewController.color = (selectedHeader?.color)!
             
             case "editNote":
             
@@ -152,6 +172,8 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
                 //passing date to destionation
                 destinationViewController.note = selectedNote
                 destinationViewController.headerNearDate = headerNearDate
+                //passing a copy of the noteCell
+                destinationViewController.noteCell = noteCell
  
             default:
                 fatalError("Unexpected Segue Identifier, no code to deal with this segue; \(String(describing: segue.identifier))")
@@ -161,14 +183,39 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
     }
     
-    //This method determines what happens when you return to this view, A.K.A.
-    //This method deals with creating new sections and notes
+    /*
+     * unwindToReminderList() method
+     * this method automatically runs when returning to this view from another one.  It updates information if anything was changed/added elsewhere.  Exactly what it does for each type of view it can return from it explained inside.
+     */
     @IBAction func unwindToReminderList(sender: UIStoryboardSegue) {
         
         if let sourceViewController = sender.source as? HeaderViewController {
             
-            //if an existing header was edited or if a new one was made
-            if sourceViewController.isEdit! {
+            //if this section is to be deleted
+            if sourceViewController.doDelete {
+                
+                //deleting this header from headers list
+                let indexOfThis = headers.index(of: sourceViewController.header!)
+                headers.remove(at: indexOfThis!)
+                
+                //deleting all notes of this header
+                updateNoteIdentities()  //to make sure the right notes get deleted
+                
+                var deleteAtIndexes = [Int]()   //BUG FIX - if i delete notes as i find them i change the size of notes.count() but the for-loop dosent update, causing an out of bounds error
+                for notesIndex in 0..<notes.count {
+                    if (notes[notesIndex].headerIdentity == sourceViewController.header?.identity) {
+                        deleteAtIndexes.append(notesIndex)
+                    }
+                }
+                
+                for atIndex in 0..<deleteAtIndexes.count {
+                    notes.remove(at: deleteAtIndexes[atIndex] - atIndex)    // "- atIndex" because once i delete 1, next note is at -1 position
+                }
+                
+                self.collectionView?.reloadData()
+                
+            //if an existing header was edited
+            } else if sourceViewController.isEdit! {
                 
                 let newHeader = sourceViewController.header
                 
@@ -180,7 +227,8 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
                 }
                 
                 self.collectionView?.reloadData()   //reloads the collectionView so it displays the new data
-                
+            
+            //if a new header was made
             } else {
                 
                 let section = sourceViewController.header
@@ -280,6 +328,7 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         cell.checkbox.setImage(#imageLiteral(resourceName: "filledCheckbox"), for: UIControlState.selected)
         cell.checkbox.isSelected = note.checkboxClicked
         cell.note = note
+        cell.setImage()
     
         if note.hasDate {
             cell.dateLabel.text = dateFormatter.string(from: note.activationDate!)
@@ -294,15 +343,14 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     //configures the sections
     override func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
         
-        var header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "NoteHeader", for: indexPath) as! NoteCollectionReusableView
+        let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "NoteHeader", for: indexPath) as! NoteCollectionReusableView
         
         let section = headersDisplayed[(indexPath as NSIndexPath).section]
         
         header.titleLabel.text = section.name
         header.headerDataClass = section
         header.parentView = self
-        header = assignImages(headerCell: header)
-        
+        header.setImage()
         
         return header
         
@@ -313,54 +361,28 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     //defines the size of each cell
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
+        let header = headersDisplayed[(indexPath as NSIndexPath).section]
+        let note = header.notes[indexPath.row]
+        
+    
+        
         let paddingSpace = sectionInsets.left * 2   //amount of space to leave open to each side
         let widthPerItem = view.frame.width - paddingSpace    //amount of space left for the cell, total space - padding space
-        let heightPeritem: CGFloat = 51    //defined height of each cell (its total feature in storyboard have a height of 50.5
+        let heightPeritem: CGFloat = 70    //defined height of each cell
         
         return CGSize(width: widthPerItem, height: heightPeritem)
     }
     
-    //defines the margins (padding space) around this cell
-    //Educated guess - seems to affect spacing between header and cells, no cell -> cell
+    
+    //defines the spacing between cells and headers, as in header -> cellFirst and cellLast -> nextHeader, but NOT cell -> cell
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
         return sectionInsets
     }
     
-    //defines the spacing between each cell, as in "cell 1 bottom" -> "cell 2 top"
-    //Ecucated guess - seems to affect spacing between cells and other cells, not cells -> header
+    //defines the spacing between each cell, as in "cell 1 bottom" -> "cell 2 top", NOT cell -> header
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, minimumLineSpacingForSectionAt section: Int) -> CGFloat {
-        return sectionInsets.bottom
+        return 0
     }
-    // MARK: UICollectionViewDelegate
-
-    /*
-    // Uncomment this method to specify if the specified item should be highlighted during tracking
-    override func collectionView(_ collectionView: UICollectionView, shouldHighlightItemAt indexPath: IndexPath) -> Bool {
-        return true
-    }
-    */
-
-    /*
-    // Uncomment this method to specify if the specified item should be selected
-    override func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
-        return true
-    }
-    */
-
-    /*
-    // Uncomment these methods to specify if an action menu should be displayed for the specified item, and react to actions performed on the item
-    override func collectionView(_ collectionView: UICollectionView, shouldShowMenuForItemAt indexPath: IndexPath) -> Bool {
-        return false
-    }
-
-    override func collectionView(_ collectionView: UICollectionView, canPerformAction action: Selector, forItemAt indexPath: IndexPath, withSender sender: Any?) -> Bool {
-        return false
-    }
-
-    override func collectionView(_ collectionView: UICollectionView, performAction action: Selector, forItemAt indexPath: IndexPath, withSender sender: Any?) {
-    
-    }
-    */
     
     //MARK: UITextFieldDelegate
     
@@ -446,7 +468,10 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     
     //MARK: Actions
     
-    //will be activated when a header is tapped, it will switch whether their notes should be displayed or not
+    /*
+     * headerSelected() method
+     * This method will run whenever a header is tapped.  It will change between displaying that headers notes and note displaying them.
+     */
     func headerSelected(header: Header) {
         header.notesAreHidden = !header.notesAreHidden
         self.collectionView?.reloadData()
@@ -455,7 +480,10 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         saveHeaders()
     }
     
-    //will activate when the checkbox is selected in one of the notes
+    /*
+     * checkboxSelected() method
+     * This method runs whenever the checkbox in a note is selected.  What it does is explained inside (writing this blurb months after below, below it more accurate)
+     */
     @IBAction func checkboxSelected(_ sender: UIButton) {
         
         let selectedButton = sender
@@ -479,7 +507,7 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         selectedNote?.checkboxClicked = !(selectedNote?.checkboxClicked)!  //switching the value of this variable
         noteCell?.checkbox.isSelected = (selectedNote?.checkboxClicked)!   //deciding button state based on previous variable
         
-        //moving selectetNote to correct arrays and removing from incorrect arrays
+        //moving selectedNote to correct arrays and removing from incorrect arrays
         if (selectedNote?.checkboxClicked)! {    //if the box is now checked
             
             newCompletedNote(newNote: selectedNote!)
@@ -496,13 +524,15 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         //save notes
         saveCompletedNotes()
         saveNotes()
+        
     }
     
     //MARK: Headers creator and organizer methods
     
-    //will organize notes into headers
-    //has a glitch where if array notes is empty the seconf for-loop will be 0...-1.  Added a default not in createHeadersSystem to deal with that
-    //
+    /*
+     * notesIntoHeaders() method
+     * Will organize the notes into headers.  Unsure precisely how it functions, see comments in method
+     */
     func notesIntoHeaders() {
         
         var addedNote = false   //new notes can be created in the following loop, if so we need to save notes at the end.  This tracks if we have to do that
@@ -564,14 +594,19 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     }
     
     /*
-    Will take the value of var. headersSystem to determine how the headers that hold dates with notes will be organized
-    if var. headersSystem equals...
-    1 - today-tommorrow-this week-additional
-    */
-    /*
-     Is an unimportant feature and so skipped implementation, will implement later
-    */
+     * createHeadersSystem() method
+     * Will create all of the headers and their date components.  Is part of initial setup.
+     */
     func createHeadersSystem() {
+        
+        /*
+         Will take the value of var. headersSystem to determine how the headers that hold dates with notes will be organized
+         if var. headersSystem equals...
+         1 - today-tommorrow-this week-additional
+         */
+        /*
+         Is an unimportant feature and so skipped implementation, will implement later
+         */
         
         switch headersSystem {
             
@@ -583,52 +618,52 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
             
             nearDateComponents.day = -7
             findOpenHeaderIdentity()
-            let header1 = Header(name: "Over a week ago", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: true)
+            let header1 = Header(name: "Over a week ago", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: true, deletable: false)
             header1.headerShouldHide = true
             headers.append(header1)
             
             nearDateComponents.day = -2
             farDateComponents.day = -6
             findOpenHeaderIdentity()
-            let header2 = Header(name: "last week", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, farDate: farDateComponents)
+            let header2 = Header(name: "last week", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, farDate: farDateComponents, deletable: false)
             header2.headerShouldHide = true
             headers.append(header2)
             
             nearDateComponents.day = -1
             findOpenHeaderIdentity()
-            let header3 = Header(name: "Yesterday", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false)
+            let header3 = Header(name: "Yesterday", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
             header3.headerShouldHide = true
             headers.append(header3)
             
             nearDateComponents.day = 0
             findOpenHeaderIdentity()
-            let header4 = Header(name: "Today", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false)
+            let header4 = Header(name: "Today", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
             headers.append(header4)
             
             nearDateComponents.day = 1
             findOpenHeaderIdentity()
-            let header5 = Header(name: "Tomorrow", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false)
+            let header5 = Header(name: "Tomorrow", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
             headers.append(header5)
             
             nearDateComponents.day = 2
             farDateComponents.day = 6
             findOpenHeaderIdentity()
-            let header6 = Header(name: "This week", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, farDate: farDateComponents)
+            let header6 = Header(name: "This week", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, farDate: farDateComponents, deletable: false)
             headers.append(header6)
             
             nearDateComponents.day = 7
             findOpenHeaderIdentity()
-            let header7 = Header(name: "over a week away", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: true)
+            let header7 = Header(name: "over a week away", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: true, deletable: false)
             headers.append(header7)
             
             findOpenHeaderIdentity()
-            let header9 = Header(name: "miscellaneous", notes: collection, identity: openHeaderIdentity!)
+            let header9 = Header(name: "miscellaneous", notes: collection, identity: openHeaderIdentity!, deletable: false)
             header9.headerShouldHide = true
             header9.isMiscellaneous = true
             headers.append(header9)
             
             findOpenHeaderIdentity()
-            let header8 = Header(name: "Completed Notes", notes: collection, identity: openHeaderIdentity!)
+            let header8 = Header(name: "Completed Notes", notes: collection, identity: openHeaderIdentity!, deletable: false)
             header8.notesAreCompleted = true
             header8.notesAreHidden = true
             headers.append(header8)
@@ -644,20 +679,19 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
     }
     
-    //will update note identities to match the header with the same activation date
+    /*
+     * updateNoteIdentities() method
+     * This method will go through every header and every note to see if their dates match.  If so the note's headerIdentity is updated to match the headers identity.
+     */
     func updateNoteIdentities() {
         
-        /*
-         Will go through every headers index and every notes index and use the headers .matches method to see if the note belongs in that header
-        */
         for headerIndex in 0...headers.count - 1 {
-            
             if headers[headerIndex].hasDate {
                 
                 for notesIndex in 0...notes.count - 1 {
-                    
                     if notes[notesIndex].hasDate {
                         
+                        //using the .mathes() method to determine if their dates match
                         if (headers[headerIndex].matches(passedDate: notes[notesIndex].activationDate!)) {
                             
                             notes[notesIndex].headerIdentity = headers[headerIndex].identity
@@ -665,11 +699,9 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
                         }
                         
                     }
-                    
                 }
                 
             }
-            
         }
         
         //save notes
@@ -679,7 +711,10 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     
     //MARK: Private Methods
     
-    //will create a series of sample notes
+    /*
+     * loadSampleNotes() method
+     * If this is the first time this app is running, then this method will create a series of sample notes
+     */
     func loadSampleNotes() {
         
         var activationDateComponents = DateComponents()
@@ -707,12 +742,13 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
     }
     
-    
+    /*
+     * noteUnckeded() method
+     * This is a helper method of checkBoxSelected() method.  This method runs when a checkbox is selected and checkBoxSelected() determines that its being unselected.
+     * (1) If the note has an activation date sent it to its correct header, (2) else send it back to its originial dateless header, (3) else send it to the miscellaneous header if its originial header dosent exist any longer
+     */
     func noteUnchecked(newNote: Note) {
         
-        /*
-         (1) If the note has an activation date sent it to its correct header, (2) else send it back to its originial dateless header, (3) else send it to the miscellaneous header if its originial header dosent exist any longer
-         */
         if (newNote.hasDate) {     //1
             
             notes.append(newNote)
@@ -747,14 +783,18 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
             notes.append(newNote)
             notesIntoHeaders()
             self.collectionView?.reloadData()
+            
         }
         
     }
     
-    //will find the next open header identity
+    /*
+     * findOpenHeaderIdentity() method
+     * This method will find the next open header identity by going though every number 0 to headers.count() and checking if that identity is already taken.
+     */
     func findOpenHeaderIdentity() {
         
-        if (headers.count == 0) {   //to fix the if-statement glitch where it will be 0...-1
+        if (headers.count == 0) {   //to fix the for-loop glitch where it will be 0...-1
             openHeaderIdentity = 0
             
         } else {
@@ -786,7 +826,10 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
     }
 
-    //will find the next open note identity
+    /*
+     * findOpenNoteIdentity() method
+     * This method will find the next open note identity by going though every number 0 to notes.count() and checking if that identity is already taken.
+     */
     func findOpenNoteIdentity() {
         
         let tempNotes = notes + completedNotes  //combining both notes arrays
@@ -823,8 +866,11 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
     }
     
-    //Not fully functional, what happens if we're creating a default note in a header that has dates?
-    //same problem below
+    /*
+     * addDefaultNote() method
+     * This method will add a default, empty note to the header with the specified identity
+     * This method should not be confused with addDefaultNotes().  The latter will check every header, see if it needs a default note, and adds one.  This one does so for only one header.
+     */
     func addDefaultNote(headerIdentity: Int) {
         
         findOpenNoteIdentity()
@@ -843,17 +889,15 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
     }
     
-    //will go through all headers and add default notes if they don't exist
-    //has same problem as above
+    /*
+     * addDefaultNotes() method
+     * This method will go through every header and check if it has a default (empty) note at the end.  If not, it will add one.
+     */
     func addDefaultNotes() {
-        
-        /*
-         will go through every header and check that the last note is empty.  If its not, add a new default note to that header
-         */
         
         for headerIndex in 0...headers.count - 1 {
             
-            // [ if the last note in the header is not empty || there are no notes in the heade ] && this is not the header that holds completed notes
+            // [ if the last note in the header is not empty || there are no notes in the header ] && this is not the header that holds completed notes
             if ((headers[headerIndex].notes.last?.text.isEmpty == false) || (headers[headerIndex].notes.isEmpty)) && headers[headerIndex].notesAreCompleted == false {
                 
                 findOpenNoteIdentity()
@@ -867,6 +911,10 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
     }
     
+    /*
+     * newCompletedNote() method
+     * see below
+     */
     //will add a new note to the completedNote array, but more importantly sort it to the correct position in that array depending on its activation or creation date
     func newCompletedNote(newNote: Note) {
         
@@ -915,91 +963,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         }
         
     }   //end of method newCompletedNote
-    
-    func assignImages(headerCell: NoteCollectionReusableView) -> NoteCollectionReusableView {
-        
-        headerCell.editButton.setImage(#imageLiteral(resourceName: "pencilEdit"), for: UIControlState.normal)
-        
-        switch headerCell.headerDataClass?.color {
-            
-            case "light blue"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "lbleft")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "lbcenter")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "lbright")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "lbpencil"), for: UIControlState.normal)
-            
-            case "dark green"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "dgleft")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "dgcenter")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "dgright")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "dgpencil"), for: UIControlState.normal)
-            
-            case "dark blue 1"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "db1left")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "db1center")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "db1right")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "db1pencil"), for: UIControlState.normal)
-
-            case "dark blue 2"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "db2left")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "db2center")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "db2right")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "db2pencil"), for: UIControlState.normal)
-            
-            case "red"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "rleft")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "rcenter")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "rright")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "rpencil"), for: UIControlState.normal)
-            
-            case "yellow"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "yleft")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "ycenter")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "yright")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "ypencil"), for: UIControlState.normal)
-            
-            case "green"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "gleft")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "gcenter")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "gright")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "gpencil"), for: UIControlState.normal)
-            
-            case "orange"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "orleft")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "orcenter")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "orright")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "orpencil"), for: UIControlState.normal)
-            
-            case "hot pink"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "hpleft")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "hpcenter")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "hpright")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "hppencil"), for: UIControlState.normal)
-            
-            case "purple"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "pleft")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "pcenter")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "pright")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "ppencil"), for: UIControlState.normal)
-            
-            case "grey"?:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "greleft")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "grecenter")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "greright")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "grepencil"), for: UIControlState.normal)
-            
-            default:
-                headerCell.leftImage.image = #imageLiteral(resourceName: "orleft")
-                headerCell.centerImage.image = #imageLiteral(resourceName: "orcenter")
-                headerCell.rightImage.image = #imageLiteral(resourceName: "orright")
-                headerCell.editButton.setImage(#imageLiteral(resourceName: "orpencil"), for: UIControlState.normal)
-
-            
-        }
-        
-        return(headerCell)
-        
-    }
     
     //MARK: Methods to do with saving and loading
     

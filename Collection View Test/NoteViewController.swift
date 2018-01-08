@@ -21,10 +21,14 @@ class NoteViewController: UIViewController, UITextFieldDelegate {
     var activationDate: Date?
     var headerNearDate: Date?   //will hold the headers activation date, which will be the default activation date
     var hasDate: Bool?
+    var noteCell: NoteCollectionViewCell?
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        //setting background image
+        self.view.backgroundColor = UIColor(patternImage: #imageLiteral(resourceName: "background"))
+        
         //setting this class as the textfields delegate
         nameTextField.delegate = self
         

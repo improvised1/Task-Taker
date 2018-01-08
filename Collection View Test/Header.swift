@@ -18,11 +18,11 @@ class Header: NSObject, NSCoding {
     var identity: Int
     var nearDate = DateComponents()
     var farDate = DateComponents()
-    var color: String
     
     var hasDate: Bool   //indicates if there are dateComponents
     var hasFar: Bool    //indicated if there is a far date, if there are a range of dates or just one in nearDate
     var hasForever: Bool    //indicates if there is no far date, but because it goes to infinity
+    var deletable: Bool     //indicates if this header can be deleted or not, and so whether or not to displayy the delete button
     var notesAreCompleted: Bool = false     //indicates if this is the "completed notes" header.  This will always default to false.
     var headerShouldHide: Bool = false  //indicates if the header should dissapear when its empty
     var notesAreHidden: Bool = false    //indicates if the header has been selected and told to hide
@@ -41,8 +41,8 @@ class Header: NSObject, NSCoding {
         static let identity = "identity"
         static let nearDate = "nearDate"
         static let farDate = "farDate"
-        static let color = "Color"
         static let hasForever = "hasForever"
+        static let deletable = "deletable"
         static let notesAreCompleted = "notesAreCompleted"
         static let headerShouldHide = "headerShouldHide"
         static let notesAreHidden = "notesAreHidden"
@@ -53,14 +53,14 @@ class Header: NSObject, NSCoding {
     //MARK: Initialization
     
     //complete
-    init(name: String, notes: [Note], identity: Int, nearDate: DateComponents, farDate: DateComponents) {
+    init(name: String, notes: [Note], identity: Int, nearDate: DateComponents, farDate: DateComponents, deletable: Bool) {
         
         self.name = name
         self.notes = notes
         self.identity = identity
         self.nearDate = nearDate
         self.farDate = farDate
-        self.color = "orange"
+        self.deletable = deletable
         
         self.hasDate = true
         self.hasFar = true
@@ -69,13 +69,13 @@ class Header: NSObject, NSCoding {
     }
     
     //missing a far date, has only a single date and not a range of them
-    init(name: String, notes: [Note], identity: Int, nearDate: DateComponents, hasForever: Bool) {
+    init(name: String, notes: [Note], identity: Int, nearDate: DateComponents, hasForever: Bool, deletable: Bool) {
         
         self.name = name
         self.notes = notes
         self.identity = identity
         self.nearDate = nearDate
-        self.color = "orange"
+        self.deletable = deletable
         
         self.hasDate = true
         self.hasFar = false
@@ -84,12 +84,12 @@ class Header: NSObject, NSCoding {
     }
     
     //missing all dates, has no dates
-    init(name: String, notes: [Note], identity: Int) {
+    init(name: String, notes: [Note], identity: Int, deletable: Bool) {
         
         self.name = name
         self.notes = notes
         self.identity = identity
-        self.color = "orange"
+        self.deletable = deletable
         
         self.hasDate = false
         self.hasFar = false
@@ -101,14 +101,14 @@ class Header: NSObject, NSCoding {
     the next 3 inits are for loading saved headers
     */
     //when there are no dates
-    init(name: String, identity: Int, color: String, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool) {
+    init(name: String, identity: Int, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool, deletable: Bool) {
         
         let collection = [Note]()
         
         self.name = name
         self.notes = collection
         self.identity = identity
-        self.color = color
+        self.deletable = deletable
         
         self.hasDate = false
         self.hasFar = false
@@ -122,16 +122,16 @@ class Header: NSObject, NSCoding {
     }
     
     //when there is only a near date
-    init(name: String, identity: Int, nearDate: DateComponents, hasForever: Bool, color: String, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool) {
+    init(name: String, identity: Int, nearDate: DateComponents, hasForever: Bool, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool, deletable: Bool) {
         
         let collection = [Note]()
         
         self.name = name
         self.notes = collection
         self.identity = identity
-        self.color = color
         
         self.nearDate = nearDate
+        self.deletable = deletable
         
         self.hasDate = true
         self.hasFar = false
@@ -145,17 +145,17 @@ class Header: NSObject, NSCoding {
     }
     
     //when there are 2 dates
-    init(name: String, identity: Int, nearDate: DateComponents, farDate: DateComponents, color: String, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool) {
+    init(name: String, identity: Int, nearDate: DateComponents, farDate: DateComponents, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool, deletable: Bool) {
         
         let collection = [Note]()
         
         self.name = name
         self.notes = collection
         self.identity = identity
-        self.color = color
         
         self.nearDate = nearDate
         self.farDate = farDate
+        self.deletable = deletable
         
         self.hasDate = true
         self.hasFar = true
@@ -231,8 +231,8 @@ class Header: NSObject, NSCoding {
         aCoder.encode(identity, forKey: PropertyKey.identity)
         aCoder.encode(nearDate, forKey: PropertyKey.nearDate)
         aCoder.encode(farDate, forKey: PropertyKey.farDate)
-        aCoder.encode(color, forKey: PropertyKey.color)
         aCoder.encode(hasForever, forKey: PropertyKey.hasForever)
+        aCoder.encode(deletable, forKey: PropertyKey.deletable)
         aCoder.encode(notesAreCompleted, forKey: PropertyKey.notesAreCompleted)
         aCoder.encode(headerShouldHide, forKey: PropertyKey.headerShouldHide)
         aCoder.encode(notesAreHidden, forKey: PropertyKey.notesAreHidden)
@@ -249,27 +249,13 @@ class Header: NSObject, NSCoding {
             return nil
         }
         
-        //BUGFIX - gives an error when i delete the "as? (var)" but complains when i dont.  The exact bugwording was "needs optional", maybe look up later
-        guard let identity = aDecoder.decodeInteger(forKey: PropertyKey.identity) as? Int else {
-            os_log("unable to decode the identity for the header object", log: OSLog.default, type: .debug)
-            return nil
-        }
-        
-        guard let hasForever = aDecoder.decodeBool(forKey: PropertyKey.hasForever) as? Bool else {
-            os_log("unable to decode the hasForever for the note object", log: OSLog.default, type: .debug)
-            return nil
-        }
-        
-        guard let notesAreCompleted = aDecoder.decodeBool(forKey: PropertyKey.notesAreCompleted) as? Bool else {
-            os_log("unable to decode the notesAreCompleted for the note object", log: OSLog.default, type: .debug)
-            return nil
-        }
-        
-        //the following are optional variables of a Note object
+        let identity = aDecoder.decodeInteger(forKey: PropertyKey.identity)
+        let hasForever = aDecoder.decodeBool(forKey: PropertyKey.hasForever)
+        let deletable = aDecoder.decodeBool(forKey: PropertyKey.deletable)
+        let notesAreCompleted = aDecoder.decodeBool(forKey: PropertyKey.notesAreCompleted)
         
         let nearDate = aDecoder.decodeObject(forKey: PropertyKey.nearDate) as? DateComponents
         let farDate = aDecoder.decodeObject(forKey: PropertyKey.farDate) as? DateComponents
-        let color = aDecoder.decodeObject(forKey: PropertyKey.color) as? String
         let notesAreHidden = aDecoder.decodeBool(forKey: PropertyKey.notesAreHidden)
         let headerShouldHide = aDecoder.decodeBool(forKey: PropertyKey.headerShouldHide)
         let isMiscellaneous = aDecoder.decodeBool(forKey: PropertyKey.isMiscellaneous)
@@ -277,11 +263,11 @@ class Header: NSObject, NSCoding {
         //must call the designated initializer
         //BUGFIX - doing nearDate != nil dosent work, as the dateComponents hold a value isLeapMonth that holds a value and so is non-nil.  So instead im testing that day is non-nil, but if you later transition to using months this could cause problems
         if (nearDate?.day != nil) && (farDate?.day != nil) {
-            self.init(name: name, identity: identity, nearDate: nearDate!, farDate: farDate!, color: color!, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous)
+            self.init(name: name, identity: identity, nearDate: nearDate!, farDate: farDate!, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous, deletable: deletable)
         } else if (nearDate?.day != nil) {
-            self.init(name: name, identity: identity, nearDate: nearDate!, hasForever: hasForever, color: color!, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous)
+            self.init(name: name, identity: identity, nearDate: nearDate!, hasForever: hasForever, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous, deletable: deletable)
         } else {
-            self.init(name: name, identity: identity, color: color!, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous)
+            self.init(name: name, identity: identity, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous, deletable: deletable)
         }
         
         

@@ -15,36 +15,33 @@ class HeaderViewController: UIViewController, UITextFieldDelegate {
     
     @IBOutlet weak var nameTextField: UITextField!
     @IBOutlet weak var saveButton: UIBarButtonItem!
-    @IBOutlet weak var datePicker: UIDatePicker!
+    @IBOutlet weak var deleteButton: UIButton!
     var header: Header?
     var note: Note?
     var openHeaderIdentity: Int?
     var openNoteIdentity: Int?
-    var color: String = ""
     var isEdit: Bool?
-    
-    @IBOutlet weak var dateRangeText: UILabel!
-    @IBOutlet weak var dateSystemStack: UIStackView!    //will implement later, for now is always hidden
+    var doDelete = false;
     
     override func viewDidLoad() {
         
         super.viewDidLoad()
 
+        //setting background image
+        self.view.backgroundColor = UIColor(patternImage: #imageLiteral(resourceName: "background"))
+        
+        //will use this later when implementing delete button
         if isEdit! {
-            
             navigationItem.title = header?.name
             nameTextField.text = header?.name
             
-            dateSystemStack.isHidden = true
+            if !(header?.deletable)! {  //BUG FIX - placed here to make sure that there is even a header to check the deletable variable of
+                deleteButton.isHidden = true;
+            }
             
         } else {
-            
-            dateRangeText.isHidden = true
-            dateSystemStack.isHidden = true
-            
+            deleteButton.isHidden = true;
         }
-        
-        dateRangeText.isHidden = true   //temporarily disabling this feature
         
         //setting this class as the textfields delegate
         nameTextField.delegate = self
@@ -89,51 +86,31 @@ class HeaderViewController: UIViewController, UITextFieldDelegate {
         return true
     }
 
-    //MARK: Actions
+    // MARK: Actions
     
-    @IBAction func redButtonSelected(_ sender: UIButton) {
-        color = "red"
-    }
-    
-    @IBAction func orangeButtonSelected(_ sender: Any) {
-        color = "orange"
-    }
-    
-    @IBAction func yellowButtonSelected(_ sender: Any) {
-        color = "yellow"
-    }
-    
-    @IBAction func greenButtonSelected(_ sender: Any) {
-        color = "green"
-    }
-    
-    @IBAction func darkGreenButtonSelected(_ sender: Any) {
-        color = "dark green"
-    }
-    
-    @IBAction func lightBlueButtonSelected(_ sender: Any) {
-        color = "light blue"
-    }
-    //lighter
-    @IBAction func darkBlue2ButtonSelected(_ sender: Any) {
-        color = "dark blue 2"
-    }
-    //darker
-    @IBAction func darkBlue1ButtonSelected(_ sender: Any) {
-        color = "dark blue 1"
+    /*
+    deleteClicked() method
+    This method runs whenever deleteButton is clicked.
+    This method will run an alert popup warning that deleting this section is permanent, and will give the user a cancel and delete option.  If they click delete, then we unwind to the main view controller, but first we set the variable doDelete to true, to signal that we should delete this header.  We use that variable because the returnToReminderList in main can't check identifiers.
+    */
+    @IBAction func deleteClicked(_ sender: Any) {
+        
+        let alertController = UIAlertController(title: "Confirm Deletion", message: "Are you sure you want to delete this item?", preferredStyle: UIAlertControllerStyle.alert)
+        alertController.addAction(UIAlertAction(title: "Cancel", style: UIAlertActionStyle.cancel, handler: nil))
+        
+        //adding delete button + its actions
+        let deleteAction = UIAlertAction(title: "Delete", style: UIAlertActionStyle.destructive) { action in
+            self.doDelete = true;
+            self.performSegue(withIdentifier: "deleteSection", sender: self)     //return to main view with identifier "deleteSection"
+        }
+        alertController.addAction(deleteAction)
+        
+        //presenting alert message
+        self.present(alertController, animated: true, completion: nil)
+        
     }
     
-    @IBAction func purpleButtonSelected(_ sender: Any) {
-        color = "purple"
-    }
     
-    @IBAction func pinkButtonSelected(_ sender: Any) {
-        color = "hot pink"
-    }
-    
-    @IBAction func greyButtonSelected(_ sender: Any) {
-        color = "grey"
-    }
     
     // MARK: - Navigation
 
@@ -161,7 +138,6 @@ class HeaderViewController: UIViewController, UITextFieldDelegate {
             
             //updating the header
             header?.name = nameTextField.text!
-            header?.color = color
             
         } else {
             
@@ -175,13 +151,10 @@ class HeaderViewController: UIViewController, UITextFieldDelegate {
             let notes = collection
             
             //creating the header and note thats to be passed to NoteCollectionViewController
-            header = Header(name: name, notes: notes, identity: openHeaderIdentity!)
-            header?.color = color
+            header = Header(name: name, notes: notes, identity: openHeaderIdentity!, deletable: true)
             note = tempNote
             
         }
-        
-        
         
     }
 

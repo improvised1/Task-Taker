@@ -37,6 +37,7 @@ class Note: NSObject, NSCoding {
         static let activationDate = "activationDate"
         static let creationDate = "creationDate"
         static let checkboxClicked = "checkboxClicked"
+        
     }
     
     //MARK: Initialization
@@ -110,29 +111,15 @@ class Note: NSObject, NSCoding {
         aCoder.encode(activationDate, forKey: PropertyKey.activationDate)
         aCoder.encode(creationDate, forKey: PropertyKey.creationDate)
         aCoder.encode(checkboxClicked, forKey: PropertyKey.checkboxClicked)
+        
     }
     
     //im note sure if what i marked as optional and required here makes sense, look back over this at some point
     required convenience init?(coder aDecoder: NSCoder) {
         
-        //The following are required variables of a Note object, if they cannot be decoded then the initializer should fail
-        guard let text = aDecoder.decodeObject(forKey: PropertyKey.text) as? String else {
-            os_log("unable to decode the text for the note object", log: OSLog.default, type: .debug)
-            return nil
-        }
-        
-        guard let headerIdentity = aDecoder.decodeInteger(forKey: PropertyKey.headerIdentity) as? Int else {
-            os_log("unable to decode the headerIdentity for the note object", log: OSLog.default, type: .debug)
-            return nil
-        }
-        
-        guard let identity = aDecoder.decodeInteger(forKey: PropertyKey.identity) as? Int else {
-            os_log("unable to decode the identity for the note object", log: OSLog.default, type: .debug)
-            return nil
-        }
-        
-        //the following are optional variables of a Note object
-        
+        let text = aDecoder.decodeObject(forKey: PropertyKey.text) as? String
+        let headerIdentity = aDecoder.decodeInteger(forKey: PropertyKey.headerIdentity)
+        let identity = aDecoder.decodeInteger(forKey: PropertyKey.identity)
         let activationDate = aDecoder.decodeObject(forKey: PropertyKey.activationDate) as? Date
         let creationDate = aDecoder.decodeObject(forKey: PropertyKey.creationDate) as? Date
         let checkboxClicked = aDecoder.decodeBool(forKey: PropertyKey.checkboxClicked)
@@ -140,9 +127,9 @@ class Note: NSObject, NSCoding {
         //must call the designated initializer
         
         if (activationDate != nil) {
-            self.init(text: text, headerIdentity: headerIdentity, identity: identity, activationDate: activationDate!, creationDate: creationDate!, checkboxClicked: checkboxClicked)
+            self.init(text: text!, headerIdentity: headerIdentity, identity: identity, activationDate: activationDate!, creationDate: creationDate!, checkboxClicked: checkboxClicked)
         } else {
-            self.init(text: text, headerIdentity: headerIdentity, identity: identity, creationDate: creationDate!, checkboxClicked: checkboxClicked)
+            self.init(text: text!, headerIdentity: headerIdentity, identity: identity, creationDate: creationDate!, checkboxClicked: checkboxClicked)
         }
         
     }
