@@ -20,6 +20,7 @@
 		217F478A1ED32249002A1F39 /* Collection_View_TestTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217F47891ED32249002A1F39 /* Collection_View_TestTests.swift */; };
 		217F47951ED32249002A1F39 /* Collection_View_TestUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217F47941ED32249002A1F39 /* Collection_View_TestUITests.swift */; };
 		217F47A51ED333D7002A1F39 /* NoteCollectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 217F47A41ED333D7002A1F39 /* NoteCollectionViewController.swift */; };
+		21F216D42005578800F8C6A3 /* RepeatViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21F216D32005578800F8C6A3 /* RepeatViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -60,6 +61,7 @@
 		217F47961ED32249002A1F39 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		217F47A41ED333D7002A1F39 /* NoteCollectionViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NoteCollectionViewController.swift; sourceTree = "<group>"; };
 		2192D44A1F40D9E300ADE732 /* Collection View Test.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Collection View Test.entitlements"; sourceTree = "<group>"; };
+		21F216D32005578800F8C6A3 /* RepeatViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepeatViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -92,6 +94,7 @@
 			children = (
 				212D9E5D1EE9F184007E7333 /* HeaderViewController.swift */,
 				212D9E5B1EE9F176007E7333 /* NoteViewController.swift */,
+				21F216D32005578800F8C6A3 /* RepeatViewController.swift */,
 			);
 			name = "View Controllers";
 			sourceTree = "<group>";
@@ -310,6 +313,7 @@
 				217F47A51ED333D7002A1F39 /* NoteCollectionViewController.swift in Sources */,
 				211F9E651F227691008E6686 /* NoteCollectionViewCell.swift in Sources */,
 				215384851EE8978A002FC557 /* Header.swift in Sources */,
+				21F216D42005578800F8C6A3 /* RepeatViewController.swift in Sources */,
 				2149EB111ED734DC0099D7C5 /* Note.swift in Sources */,
 				212D9E5E1EE9F184007E7333 /* HeaderViewController.swift in Sources */,
 			);

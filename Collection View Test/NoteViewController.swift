@@ -22,6 +22,7 @@ class NoteViewController: UIViewController, UITextFieldDelegate {
     var headerNearDate: Date?   //will hold the headers activation date, which will be the default activation date
     var hasDate: Bool?
     var noteCell: NoteCollectionViewCell?
+    var datePickerOrigninalSize: CGRect?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -31,6 +32,9 @@ class NoteViewController: UIViewController, UITextFieldDelegate {
         
         //setting this class as the textfields delegate
         nameTextField.delegate = self
+        
+        //setting variable values
+        datePickerOrigninalSize = datePicker.frame
         
         //updating text in the view controller
         activationDate = note?.activationDate
@@ -139,9 +143,12 @@ class NoteViewController: UIViewController, UITextFieldDelegate {
             
         } else {
             datePicker.isHidden = true
+            datePicker.frame = CGRect(x: 0, y: 0, width: 0, height: 0)
             hasDate = false
             
         }
+        
+        self.viewDidLoad()
         
     }
     
