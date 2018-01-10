@@ -27,6 +27,7 @@ class Header: NSObject, NSCoding {
     var headerShouldHide: Bool = false  //indicates if the header should dissapear when its empty
     var notesAreHidden: Bool = false    //indicates if the header has been selected and told to hide
     var isMiscellaneous: Bool = false
+    var hasDynamicName: Bool = false   //indicates if the name should dynamically change (used for weekdays, where today+2 is wednesday today but thursday tomorrow
     
     //MARK: Archiving Paths
     
@@ -222,6 +223,36 @@ class Header: NSObject, NSCoding {
         }
         
     }   //end of matches method
+    
+    /*
+     If i want a section to be named for the weekday it's on, then i have to dynamically calculate what day of the week it is each time.  This method will check if this header is to have a dynamic name (hasDynamicName), and if so will set self.name to be equal to the day of the week that it falls on.
+    */
+    func dynamicNameGenerator() {
+        
+        if (hasDynamicName) {
+            
+            //a section that uses dynamic names should only have a nearDate (single date component)
+            let currentDate = Date()
+            let dynamicDate = Calendar.current.date(byAdding: nearDate, to: currentDate)!
+            
+            let myCalendar = NSCalendar(calendarIdentifier: NSCalendar.Identifier.gregorian)
+            let myComponents = myCalendar?.components(.weekday, from: dynamicDate)
+            let weekDay = myComponents?.weekday     //weekDay is an integer 1 -> 7, where 1 is sunday and 7 saturday
+            
+            switch weekDay {
+            case 1?: name = "Sunday"
+            case 2?: name = "Monday"
+            case 3?: name = "Tuesday"
+            case 4?: name = "Wednesday"
+            case 5?: name = "Thursday"
+            case 6?: name = "Friday"
+            case 7?: name = "Saturday"
+            default: name = "Weekday"   //this should never occur
+            }
+            
+        }
+        
+    }
     
     //MARK: NSCoding
     

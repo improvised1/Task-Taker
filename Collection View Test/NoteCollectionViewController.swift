@@ -347,6 +347,8 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
         let section = headersDisplayed[(indexPath as NSIndexPath).section]
         
+        section.dynamicNameGenerator()  //sets the name variable to the correct string
+        print("The name of this header is \(section.name)")
         header.titleLabel.text = section.name
         header.headerDataClass = section
         header.parentView = self
@@ -361,10 +363,8 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     //defines the size of each cell
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
         
-        let header = headersDisplayed[(indexPath as NSIndexPath).section]
-        let note = header.notes[indexPath.row]
-        
-    
+        //let header = headersDisplayed[(indexPath as NSIndexPath).section]
+        //let note = header.notes[indexPath.row]
         
         let paddingSpace = sectionInsets.left * 2   //amount of space to leave open to each side
         let widthPerItem = view.frame.width - paddingSpace    //amount of space left for the cell, total space - padding space
@@ -648,26 +648,31 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
             nearDateComponents.day = 2
             findOpenHeaderIdentity()
             let header6 = Header(name: "Today+2", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
+            header6.hasDynamicName = true
             headers.append(header6)
             
             nearDateComponents.day = 3
             findOpenHeaderIdentity()
             let header7 = Header(name: "Today+3", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
+            header7.hasDynamicName = true
             headers.append(header7)
             
             nearDateComponents.day = 4
             findOpenHeaderIdentity()
             let header8 = Header(name: "Today+4", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
+            header8.hasDynamicName = true
             headers.append(header8)
             
             nearDateComponents.day = 5
             findOpenHeaderIdentity()
             let header9 = Header(name: "Today+5", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
+            header9.hasDynamicName = true
             headers.append(header9)
             
             nearDateComponents.day = 6
             findOpenHeaderIdentity()
             let header10 = Header(name: "Today+6", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
+            header10.hasDynamicName = true
             headers.append(header10)
             
             nearDateComponents.day = 7
