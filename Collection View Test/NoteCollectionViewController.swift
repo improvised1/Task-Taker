@@ -646,27 +646,52 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
             headers.append(header5)
             
             nearDateComponents.day = 2
-            farDateComponents.day = 6
             findOpenHeaderIdentity()
-            let header6 = Header(name: "This week", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, farDate: farDateComponents, deletable: false)
+            let header6 = Header(name: "Today+2", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
             headers.append(header6)
             
-            nearDateComponents.day = 7
+            nearDateComponents.day = 3
             findOpenHeaderIdentity()
-            let header7 = Header(name: "over a week away", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: true, deletable: false)
+            let header7 = Header(name: "Today+3", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
             headers.append(header7)
             
+            nearDateComponents.day = 4
             findOpenHeaderIdentity()
-            let header9 = Header(name: "miscellaneous", notes: collection, identity: openHeaderIdentity!, deletable: false)
-            header9.headerShouldHide = true
-            header9.isMiscellaneous = true
+            let header8 = Header(name: "Today+4", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
+            headers.append(header8)
+            
+            nearDateComponents.day = 5
+            findOpenHeaderIdentity()
+            let header9 = Header(name: "Today+5", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
             headers.append(header9)
             
+            nearDateComponents.day = 6
             findOpenHeaderIdentity()
-            let header8 = Header(name: "Completed Notes", notes: collection, identity: openHeaderIdentity!, deletable: false)
-            header8.notesAreCompleted = true
-            header8.notesAreHidden = true
-            headers.append(header8)
+            let header10 = Header(name: "Today+6", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: false, deletable: false)
+            headers.append(header10)
+            
+            nearDateComponents.day = 7
+            farDateComponents.day = 14
+            findOpenHeaderIdentity()
+            let header11 = Header(name: "Next Week", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, farDate: farDateComponents, deletable: false)
+            headers.append(header11)
+            
+            nearDateComponents.day = 15
+            findOpenHeaderIdentity()
+            let header12 = Header(name: "over a week away", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: true, deletable: false)
+            headers.append(header12)
+            
+            findOpenHeaderIdentity()
+            let header13 = Header(name: "miscellaneous", notes: collection, identity: openHeaderIdentity!, deletable: false)
+            header13.headerShouldHide = true
+            header13.isMiscellaneous = true
+            headers.append(header13)
+            
+            findOpenHeaderIdentity()
+            let header14 = Header(name: "Completed Notes", notes: collection, identity: openHeaderIdentity!, deletable: false)
+            header14.notesAreCompleted = true
+            header14.notesAreHidden = true
+            headers.append(header14)
             
             //save headers
             saveHeaders()           //once more options are implemented here consider moving to the end
