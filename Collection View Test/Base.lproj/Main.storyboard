@@ -310,7 +310,7 @@
                                 <rect key="frame" x="62" y="186" width="25" height="25"/>
                                 <state key="normal" image="emptyCheckbox"/>
                                 <connections>
-                                    <action selector="datePickerButtonSelected:" destination="Ov7-kw-RHf" eventType="touchUpInside" id="7ZQ-eh-59u"/>
+                                    <action selector="repeatButtonSelected:" destination="Ov7-kw-RHf" eventType="touchUpInside" id="cwc-gc-c1g"/>
                                 </connections>
                             </button>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Repeat:" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="ngY-uD-67a">
@@ -391,6 +391,7 @@
                         <outlet property="datePicker" destination="HPh-gF-wGx" id="iD2-NE-Mgy"/>
                         <outlet property="datePickerButton" destination="Z9m-Hr-c4H" id="hAa-gz-Fj1"/>
                         <outlet property="nameTextField" destination="KvC-oG-eWw" id="71Y-xC-xst"/>
+                        <outlet property="repeatButton" destination="Vam-N9-7nK" id="PSk-rW-UHa"/>
                         <outlet property="saveButton" destination="eAc-o4-ZnG" id="yzN-f5-cHq"/>
                     </connections>
                 </viewController>
@@ -650,16 +651,34 @@
                         </constraints>
                     </view>
                     <navigationItem key="navigationItem" title="Repeat Settings" id="AqS-BT-wzs">
-                        <barButtonItem key="leftBarButtonItem" title="Item" id="vqR-mA-Znx"/>
-                        <barButtonItem key="rightBarButtonItem" systemItem="save" id="n1P-aG-6iS"/>
+                        <barButtonItem key="leftBarButtonItem" systemItem="cancel" id="vqR-mA-Znx">
+                            <connections>
+                                <action selector="cancelButtonPressed:" destination="7hg-of-vBV" id="Os4-Fk-yDf"/>
+                            </connections>
+                        </barButtonItem>
+                        <barButtonItem key="rightBarButtonItem" systemItem="save" id="n1P-aG-6iS">
+                            <connections>
+                                <segue destination="e8x-ia-V83" kind="unwind" unwindAction="unwindToNoteViewControllerWithSender:" id="2C1-hz-4y7"/>
+                            </connections>
+                        </barButtonItem>
                     </navigationItem>
                     <connections>
+                        <outlet property="buttonsLabel" destination="wAN-vC-pRF" id="tQQ-Xt-JRW"/>
                         <outlet property="everyLabel" destination="FG7-36-g0s" id="Xbl-0S-InO"/>
                         <outlet property="everyPicker" destination="1hm-Mp-bpk" id="qGW-Z1-A6X"/>
                         <outlet property="frequencyPicker" destination="75d-sg-Aag" id="Hz9-dN-Mnm"/>
+                        <outlet property="friButton" destination="uWh-p1-rab" id="hUD-0d-HoP"/>
+                        <outlet property="monButton" destination="iXy-Kc-16Q" id="xbI-dh-eZh"/>
+                        <outlet property="satButton" destination="Pg9-SO-ysL" id="Txt-Uc-lYU"/>
+                        <outlet property="saveButton" destination="n1P-aG-6iS" id="1AK-T4-j9g"/>
+                        <outlet property="sunButton" destination="V36-vP-pFo" id="ZRl-P0-KAB"/>
+                        <outlet property="thurButton" destination="q7Z-Nc-h7A" id="0U9-ki-StV"/>
+                        <outlet property="tueButton" destination="ax7-cd-GU4" id="zEU-dr-ZaB"/>
+                        <outlet property="wedButton" destination="KTz-kG-AW4" id="ERV-9d-8hl"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="hAA-DT-Oi1" userLabel="First Responder" sceneMemberID="firstResponder"/>
+                <exit id="e8x-ia-V83" userLabel="Exit" sceneMemberID="exit"/>
             </objects>
             <point key="canvasLocation" x="7872.8000000000002" y="488.90554722638683"/>
         </scene>

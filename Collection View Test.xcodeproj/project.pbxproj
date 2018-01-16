@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		211F9E651F227691008E6686 /* NoteCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 211F9E641F227691008E6686 /* NoteCollectionViewCell.swift */; };
+		2120FD2920069A4D006EDABB /* RepeatingNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2120FD2820069A4D006EDABB /* RepeatingNote.swift */; };
 		212D9E5C1EE9F176007E7333 /* NoteViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212D9E5B1EE9F176007E7333 /* NoteViewController.swift */; };
 		212D9E5E1EE9F184007E7333 /* HeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212D9E5D1EE9F184007E7333 /* HeaderViewController.swift */; };
 		2149EB111ED734DC0099D7C5 /* Note.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2149EB101ED734DC0099D7C5 /* Note.swift */; };
@@ -42,6 +43,7 @@
 
 /* Begin PBXFileReference section */
 		211F9E641F227691008E6686 /* NoteCollectionViewCell.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = NoteCollectionViewCell.swift; path = ../NoteCollectionViewCell.swift; sourceTree = "<group>"; };
+		2120FD2820069A4D006EDABB /* RepeatingNote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepeatingNote.swift; sourceTree = "<group>"; };
 		212D9E5B1EE9F176007E7333 /* NoteViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NoteViewController.swift; sourceTree = "<group>"; };
 		212D9E5D1EE9F184007E7333 /* HeaderViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = HeaderViewController.swift; sourceTree = "<group>"; };
 		2149EB101ED734DC0099D7C5 /* Note.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Note.swift; sourceTree = "<group>"; };
@@ -136,6 +138,7 @@
 				217F47741ED32249002A1F39 /* AppDelegate.swift */,
 				2149EB101ED734DC0099D7C5 /* Note.swift */,
 				215384841EE8978A002FC557 /* Header.swift */,
+				2120FD2820069A4D006EDABB /* RepeatingNote.swift */,
 				217F47781ED32249002A1F39 /* Main.storyboard */,
 				21390DD91EF0AD810092A9C6 /* View Controllers */,
 				21390DDA1EF0AD920092A9C6 /* Collection View */,
@@ -316,6 +319,7 @@
 				21F216D42005578800F8C6A3 /* RepeatViewController.swift in Sources */,
 				2149EB111ED734DC0099D7C5 /* Note.swift in Sources */,
 				212D9E5E1EE9F184007E7333 /* HeaderViewController.swift in Sources */,
+				2120FD2920069A4D006EDABB /* RepeatingNote.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

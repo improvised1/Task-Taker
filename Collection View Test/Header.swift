@@ -28,6 +28,7 @@ class Header: NSObject, NSCoding {
     var notesAreHidden: Bool = false    //indicates if the header has been selected and told to hide
     var isMiscellaneous: Bool = false
     var hasDynamicName: Bool = false   //indicates if the name should dynamically change (used for weekdays, where today+2 is wednesday today but thursday tomorrow
+    var isFinalHeader: Bool = false     //indicates if this is the header that lies the farthest in the future.  Is used in RepeatingNote
     
     //MARK: Archiving Paths
     
@@ -48,6 +49,8 @@ class Header: NSObject, NSCoding {
         static let headerShouldHide = "headerShouldHide"
         static let notesAreHidden = "notesAreHidden"
         static let isMiscellaneous = "isMiscellaneous"
+        static let hasDynamicname = "hasDynamicName"
+        static let isFinalHeader = "isFinalHeader"
         
     }
     
@@ -102,7 +105,7 @@ class Header: NSObject, NSCoding {
     the next 3 inits are for loading saved headers
     */
     //when there are no dates
-    init(name: String, identity: Int, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool, deletable: Bool) {
+    init(name: String, identity: Int, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool, deletable: Bool, isFinalHeader: Bool, hasDynamicName: Bool) {
         
         let collection = [Note]()
         
@@ -119,11 +122,13 @@ class Header: NSObject, NSCoding {
         self.headerShouldHide = headerShouldHide
         self.notesAreHidden = notesAreHidden
         self.isMiscellaneous = isMiscellaneous
+        self.isFinalHeader = isFinalHeader
+        self.hasDynamicName = hasDynamicName
         
     }
     
     //when there is only a near date
-    init(name: String, identity: Int, nearDate: DateComponents, hasForever: Bool, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool, deletable: Bool) {
+    init(name: String, identity: Int, nearDate: DateComponents, hasForever: Bool, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool, deletable: Bool, isFinalHeader: Bool, hasDynamicName: Bool) {
         
         let collection = [Note]()
         
@@ -142,11 +147,13 @@ class Header: NSObject, NSCoding {
         self.headerShouldHide = headerShouldHide
         self.notesAreHidden = notesAreHidden
         self.isMiscellaneous = isMiscellaneous
+        self.isFinalHeader = isFinalHeader
+        self.hasDynamicName = hasDynamicName
         
     }
     
     //when there are 2 dates
-    init(name: String, identity: Int, nearDate: DateComponents, farDate: DateComponents, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool, deletable: Bool) {
+    init(name: String, identity: Int, nearDate: DateComponents, farDate: DateComponents, notesAreCompleted: Bool, headerShouldHide: Bool, notesAreHidden: Bool, isMiscellaneous: Bool, deletable: Bool, isFinalHeader: Bool, hasDynamicName: Bool) {
         
         let collection = [Note]()
         
@@ -166,6 +173,8 @@ class Header: NSObject, NSCoding {
         self.headerShouldHide = headerShouldHide
         self.notesAreHidden = notesAreHidden
         self.isMiscellaneous = isMiscellaneous
+        self.isFinalHeader = isFinalHeader
+        self.hasDynamicName = hasDynamicName
         
     }
     
@@ -268,6 +277,8 @@ class Header: NSObject, NSCoding {
         aCoder.encode(headerShouldHide, forKey: PropertyKey.headerShouldHide)
         aCoder.encode(notesAreHidden, forKey: PropertyKey.notesAreHidden)
         aCoder.encode(isMiscellaneous, forKey: PropertyKey.isMiscellaneous)
+        aCoder.encode(isFinalHeader, forKey: PropertyKey.isFinalHeader)
+        aCoder.encode(hasDynamicName, forKey: PropertyKey.hasDynamicname)
         
     }
     
@@ -290,18 +301,18 @@ class Header: NSObject, NSCoding {
         let notesAreHidden = aDecoder.decodeBool(forKey: PropertyKey.notesAreHidden)
         let headerShouldHide = aDecoder.decodeBool(forKey: PropertyKey.headerShouldHide)
         let isMiscellaneous = aDecoder.decodeBool(forKey: PropertyKey.isMiscellaneous)
+        let isFinalHeader = aDecoder.decodeBool(forKey: PropertyKey.isFinalHeader)
+        let hasDynamicName = aDecoder.decodeBool(forKey: PropertyKey.hasDynamicname)
         
         //must call the designated initializer
         //BUGFIX - doing nearDate != nil dosent work, as the dateComponents hold a value isLeapMonth that holds a value and so is non-nil.  So instead im testing that day is non-nil, but if you later transition to using months this could cause problems
         if (nearDate?.day != nil) && (farDate?.day != nil) {
-            self.init(name: name, identity: identity, nearDate: nearDate!, farDate: farDate!, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous, deletable: deletable)
+            self.init(name: name, identity: identity, nearDate: nearDate!, farDate: farDate!, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous, deletable: deletable, isFinalHeader: isFinalHeader, hasDynamicName: hasDynamicName)
         } else if (nearDate?.day != nil) {
-            self.init(name: name, identity: identity, nearDate: nearDate!, hasForever: hasForever, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous, deletable: deletable)
+            self.init(name: name, identity: identity, nearDate: nearDate!, hasForever: hasForever, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous, deletable: deletable, isFinalHeader: isFinalHeader, hasDynamicName: hasDynamicName)
         } else {
-            self.init(name: name, identity: identity, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous, deletable: deletable)
+            self.init(name: name, identity: identity, notesAreCompleted: notesAreCompleted, headerShouldHide: headerShouldHide, notesAreHidden: notesAreHidden, isMiscellaneous: isMiscellaneous, deletable: deletable, isFinalHeader: isFinalHeader, hasDynamicName: hasDynamicName)
         }
-        
-        
         
     }
     

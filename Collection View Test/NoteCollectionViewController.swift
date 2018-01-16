@@ -26,12 +26,15 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     var completedNotes = [Note]()
     var headers = [Header]()
     var headersDisplayed = [Header]()
+    var repeatingNotes = [RepeatingNote]()
     
     var openHeaderIdentity: Int?
     var openNoteIdentity: Int?
     let currentDate = Date()
     let formatter = DateFormatter()
     var headersSystem: Int?     //holds a # that corresponds to a headers date system, like today-tommorow-this week-later, or today-this week-later
+    
+    //MARK: Setup Methods
     
     /*
      * viewDidLoad() method
@@ -75,6 +78,16 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         updateNoteIdentities()
         notesIntoHeaders()
         addDefaultNotes()
+        
+        if let savedRepeatingNotes = loadRepeatingNotes() {
+            repeatingNotes = savedRepeatingNotes
+            
+            for repeatingNote in repeatingNotes {   //RepeatingNotes parent variable can't be saved, so we have to pass it a new copy of parent whenever we load it
+                repeatingNote.parent = self
+                repeatingNote.runCheckup()
+            }
+            
+        }
         
     }
     
@@ -169,11 +182,20 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
             
                 headerNearDate = Calendar.current.date(byAdding: headerNearDateComp!, to: currentDate)!
                 
-                //passing date to destionation
-                destinationViewController.note = selectedNote
+                destinationViewController.note = selectedNote   //passing date to destionation
                 destinationViewController.headerNearDate = headerNearDate
-                //passing a copy of the noteCell
-                destinationViewController.noteCell = noteCell
+                destinationViewController.noteCell = noteCell   //passing a copy of the noteCell
+            
+                //setting variables related to RepeatingNote's
+                if (selectedNote?.repeatIdentity != nil) {
+                    
+                    let thisRepeatingNote = findRepeatingNoteWithidentity(identity: (selectedNote?.repeatIdentity)!)
+                    destinationViewController.components = thisRepeatingNote.components
+                    if (thisRepeatingNote.selectedButtons != nil) {
+                        destinationViewController.selectedButtons = thisRepeatingNote.selectedButtons
+                    }
+                    
+                }
  
             default:
                 fatalError("Unexpected Segue Identifier, no code to deal with this segue; \(String(describing: segue.identifier))")
@@ -188,6 +210,8 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
      * this method automatically runs when returning to this view from another one.  It updates information if anything was changed/added elsewhere.  Exactly what it does for each type of view it can return from it explained inside.
      */
     @IBAction func unwindToReminderList(sender: UIStoryboardSegue) {
+        
+        print("Have arrived at unwindToReminderList()")
         
         if let sourceViewController = sender.source as? HeaderViewController {
             
@@ -267,6 +291,92 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
                 
             }
             
+            print("1, right before repeating method start")
+            
+            //checking what, if any, work should be done concerning a RepeatingNote
+            if (sourceViewController.repeatButton.isSelected && newNote?.repeatIdentity != nil) {   //an existing RepeatingNote may of been edited or reactivated
+                
+                print("2, this RepeatingNote it to be edited or reactivated")
+                
+                let newComponents = sourceViewController.components
+                let thisRepeatingNote = findRepeatingNoteWithidentity(identity: (newNote?.repeatIdentity)!)
+                
+                if (thisRepeatingNote.active == false) {
+                    //reactivate this repeatingNote
+                    print("3, reactivating RepeatingNote")
+                    newNote?.hasRepeat = true
+                    reactivateRepeatingNotesWithidentity(repeatIdentity: (newNote?.repeatIdentity)!)
+                    
+                } else if (newComponents != thisRepeatingNote.components) {
+                    print("3, editing RepeatingNote")
+                    //this RepeatingNote was edited
+                    //if newComponents use the start-from-weekdays things then i have to delete the old and create entirely new RepeatingNotes.  If the old RepeatingNote was a start-from-weekdays and new one isnt then delete old and create new, but with different creation method.  If both non!start-from-weekdays, then use RepeatingNotes edit() method
+                    
+                    let weekDayButtons = sourceViewController.selectedButtons
+                    
+                    if (weekDayButtons != nil) {    //delete old, create multiple new
+                        
+                        print("4, deleting singular/multile old and creating multiple new")
+                        completeDeleteRepeatingNoteWithIdentity(repeatIdentity: (newNote?.repeatIdentity!)!, fromNote: newNote!)
+                        createMutlipleRepeatingNotes(weekDayButtons: weekDayButtons!, originialNote: newNote!, components: newComponents, repeatIdentity: (newNote?.repeatIdentity)!)
+                        
+                    } else if (multipleRepeatingNotesForIdentity(repeatIdentity: (newNote?.repeatIdentity)!)) {    //delete old, create single new
+                        
+                        print("4, deleting multiple old and creating single new")
+                        completeDeleteRepeatingNoteWithIdentity(repeatIdentity: (newNote?.repeatIdentity!)!, fromNote: newNote!)
+                        
+                        let notesArray: [Note] = [newNote!]
+                        let newRepeatingNote = RepeatingNote(components: newComponents, repeatIdentity: (newNote?.repeatIdentity)!, notes: notesArray, parent: self)
+                        repeatingNotes.append(newRepeatingNote)
+                        
+                    } else {    //delete neigher, edit the singular one to a singular new
+                        
+                        print("4, editing RepeatingNote to a singular format")
+                        let thisRepeatingNote = findRepeatingNoteWithidentity(identity: (newNote?.repeatIdentity)!)
+                        thisRepeatingNote.edit(newComponents: newComponents)
+                        
+                    }
+                    
+                }
+                
+            } else if (sourceViewController.repeatButton.isSelected && newNote?.repeatIdentity == nil) {    //create new RepeatingNote
+                
+                print("2, We're to create a new RepeatingNote")
+                
+                let components = sourceViewController.components
+                let weekdayButtons = sourceViewController.selectedButtons
+                let repeatingNoteIdentity = returnOpenRepeatingNoteIdentity()
+                newNote?.repeatIdentity = repeatingNoteIdentity
+                newNote?.hasRepeat = true
+                
+                if (weekdayButtons == nil) {    //create only a single new RepeatingNote
+                    
+                    let notesArray: [Note] = [newNote!]
+                    
+                    if (components == nil) {
+                        print("components are nil")
+                    } else {
+                        print("components are not nil")
+                    }
+                    let newRepeatingNote = RepeatingNote(components: components, repeatIdentity: repeatingNoteIdentity, notes: notesArray, parent: self)
+                    repeatingNotes.append(newRepeatingNote)
+                    
+                } else {    //create multiple RepeatingNotes, one starting from each selected weekday
+                    
+                    createMutlipleRepeatingNotes(weekDayButtons: weekdayButtons!, originialNote: newNote!, components: components, repeatIdentity: repeatingNoteIdentity)
+                    
+                }
+                
+            } else if (sourceViewController.repeatButton.isSelected == false && newNote?.repeatIdentity != nil) {    //a RepeatingNote was deactivated
+            
+                print("2, We're to delete a RepeatingNote")
+                deleteRepeatingNotesWithIdentity(repeatIdentity: (newNote?.repeatIdentity)!, fromNote: newNote!)
+                
+            }
+            
+            //save any repeatingNotes that where created or modified
+            saveRepeatingNotes()
+                
             updateNoteIdentities()
             notesIntoHeaders()
             addDefaultNotes()
@@ -278,6 +388,8 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
             saveNotes()
             
         }
+        
+        print("----- Have finished unwindToReminderList()")
         
     }
 
@@ -348,7 +460,6 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         let section = headersDisplayed[(indexPath as NSIndexPath).section]
         
         section.dynamicNameGenerator()  //sets the name variable to the correct string
-        print("The name of this header is \(section.name)")
         header.titleLabel.text = section.name
         header.headerDataClass = section
         header.parentView = self
@@ -684,6 +795,7 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
             nearDateComponents.day = 15
             findOpenHeaderIdentity()
             let header12 = Header(name: "over a week away", notes: collection, identity: openHeaderIdentity!, nearDate: nearDateComponents, hasForever: true, deletable: false)
+            header12.isFinalHeader = true
             headers.append(header12)
             
             findOpenHeaderIdentity()
@@ -736,6 +848,29 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
         //save notes
         saveNotes()
+        
+    }
+    
+    /*
+     This method is similar to the above, but updates the headerIdentity of only a single note at a time
+     */
+    func updateNoteIdentity(note: Note) {
+        
+        for headerIndex in 0...headers.count - 1 {
+            if headers[headerIndex].hasDate {
+                
+                if note.hasDate {
+                    
+                    //using the .mathes() method to determine if their dates match
+                    if (headers[headerIndex].matches(passedDate: note.activationDate!)) {
+                        
+                        note.headerIdentity = headers[headerIndex].identity
+                        break
+                        
+                    }
+                }
+            }
+        }
         
     }
     
@@ -897,6 +1032,51 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     }
     
     /*
+     This method will find the next open note identity, but unlike the above method will return it, rather then using the weird instance variable system
+    */
+    func returnOpenNoteIdentity() -> Int {
+        
+        findOpenNoteIdentity()
+        return openNoteIdentity!
+        
+    }
+    
+    /*
+     This method will find the next open RepeatingNote identity by going through every number 0 to repeatingNotes.count() and checking if that identity is already taken
+    */
+    func returnOpenRepeatingNoteIdentity() -> Int {
+    
+        if (repeatingNotes.count == 0) {     //there was a glitch where if the array is empty 0...repeatingNotes.count-1 would be 0...-1, giving an error
+            return 0
+        } else {
+            
+            var doContinue = true
+            
+            //this for-loop will go through all possible identities until it finds one that is unused.  When it finds one doContinue is set to true, if it remains false then that identity is open
+            for identity in 0...repeatingNotes.count {
+                
+                doContinue = false
+                
+                for index in 0...repeatingNotes.count - 1 {
+                    if (identity == repeatingNotes[index].repeatIdentity) {
+                        doContinue = true
+                        break;
+                    }
+                }
+                
+                if (doContinue == false) {
+                    return identity
+                }
+                
+            }
+            
+        }
+        
+        return repeatingNotes.count //this should never run, but if we reach this point this will always be a safe identity
+    
+    }
+    
+    /*
      * addDefaultNote() method
      * This method will add a default, empty note to the header with the specified identity
      * This method should not be confused with addDefaultNotes().  The latter will check every header, see if it needs a default note, and adds one.  This one does so for only one header.
@@ -994,6 +1174,200 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
     }   //end of method newCompletedNote
     
+    /*
+     This method will return true/false to indicate if the note nextNote should be created.  It should be created in every instance except the one specified below.
+    */
+    func shouldSpawnRepeatNote(currentNote: Note, nextNote: Note) -> Bool {
+        
+        //return false only if [header identity of both notes match] AND [the header with this identity is the final header]
+        if (currentNote.headerIdentity == nextNote.headerIdentity) {
+            
+            let relevantHeader = findHeaderWithIdentity(identity: currentNote.headerIdentity)
+            
+            if (relevantHeader.isFinalHeader) {
+                return false
+            }
+        }
+        
+        return true
+        
+    }
+    
+    /*
+     Will return the header with the passed identity
+    */
+    func findHeaderWithIdentity(identity: Int) -> Header {
+        
+        for index in 0...headers.count-1 {
+            if (headers[index].identity == identity) {
+                return headers[index]
+            }
+        }
+        
+        return headers[0]   //should never run
+        
+    }
+    
+    /*
+     Will find the RepeatingNote with the passed identity
+    */
+    func findRepeatingNoteWithidentity(identity: Int) ->  RepeatingNote {
+        
+        for index in 0...repeatingNotes.count-1 {
+            if (repeatingNotes[index].repeatIdentity == identity) {
+                print("found repeatingNote at index \(index), repeatingNotes[index].active: \(repeatingNotes[index].active)")
+                return repeatingNotes[index]
+            }
+        }
+        
+        print("couldnt find RepeatingNote")
+        return repeatingNotes[0]    //should never run
+        
+    }
+    
+    /*
+     Will
+    */
+    func spawnNote(note: Note) {
+        
+        notes.append(note)
+        
+        notesIntoHeaders()
+        addDefaultNotes()
+        self.collectionView?.reloadData()
+        
+    }
+    
+    /*
+     Will delete the passed note
+    */
+    func deleteNote(toDelete: Note) {
+        
+        for index in 0...notes.count-1 {
+            if (notes[index].identity == toDelete.identity) {
+                notes.remove(at: index)
+                break
+            }
+        }
+        
+    }
+    
+    /*
+     This method will find every RepeatingNote with the given identity and "delete it".  Note that the RepeatingNote itself is not deleted, but all of the notes that it automatically produced will be.
+    */
+    func deleteRepeatingNotesWithIdentity(repeatIdentity: Int, fromNote: Note) {
+        
+        for repeatingNote in repeatingNotes {
+            if (repeatingNote.repeatIdentity == repeatIdentity) {
+                repeatingNote.delete(fromNote: fromNote)
+                print("repeatingNotes[index].active: \(repeatingNote.active)")
+            }
+        }
+        
+    }
+    
+    /*
+     Unlike the above method, this one will completely delete the RepeatingNotes.  All notes before fromNote will remain but be disconected.
+    */
+    func completeDeleteRepeatingNoteWithIdentity(repeatIdentity: Int, fromNote: Note) {
+        
+        var indexCorrection = 0     //we'll be deleting elements from repeatingNotes but the below for-loop won't update to realize that.  So to keep index in range we'll be correcting it, -1 for each element removed.
+        
+        for index in 0...repeatingNotes.count {
+            if (repeatingNotes[index - indexCorrection].repeatIdentity == repeatIdentity) {
+                repeatingNotes[index].delete(fromNote: fromNote)
+                repeatingNotes.remove(at: index - indexCorrection)
+                indexCorrection -= 1
+                
+            }
+            
+        }
+        
+    }
+    
+    /*
+     This method will reactivate every RepeatingNote with this identity by calling the RepeatingNotes .reactivate() method
+    */
+    func reactivateRepeatingNotesWithidentity(repeatIdentity: Int) {
+        
+        for repeatingNote in repeatingNotes {
+            if (repeatingNote.repeatIdentity == repeatIdentity) {
+                repeatingNote.reactivate()
+            }
+        }
+        
+    }
+    
+    /*
+     This method will create mutiple new RepeatingNotes based off of information received from RepeatViewController and NoteViewController
+     This code was once part of unwindToReminderList() and was moved here once we realized it may be used in other places
+    */
+    func createMutlipleRepeatingNotes(weekDayButtons: [Bool], originialNote: Note, components: DateComponents, repeatIdentity: Int) {
+    
+        let currentDate = Date()
+        let myCalendar = NSCalendar(calendarIdentifier: NSCalendar.Identifier.gregorian)
+        let myComponents = myCalendar?.components(.weekday, from: currentDate)
+        let currentWeekDay = myComponents?.weekday     //weekDay is an integer 1 -> 7, where 1 is sunday and 7 saturday
+        
+        for weekDayInt in 1...7 {
+            //the system i'm using treats weekdays as number 1...7, where 1 is sunday and 7 saturday.  weekdayButtons follows this convention, where index 0 is sunday and 7 is saturday.  weekDayInt is the identifier for the day of the week, and weekDayInt-1 is the index of weekdayButtons
+            
+            if (weekDayButtons[weekDayInt-1]) {
+                
+                //determinging the components to get this weekday from currentDate
+                var differenceThisToToday = weekDayInt - currentWeekDay!
+                
+                if (differenceThisToToday < 0) {
+                    differenceThisToToday += 7  //if i create a note on wednesday i dont want to start a repeat from last monday, but form next monday
+                }
+                
+                //deriving the next date that has this weekday
+                var thisComponents = DateComponents()
+                thisComponents.day = differenceThisToToday
+                let thisDate = Calendar.current.date(byAdding: thisComponents, to: currentDate)
+                
+                //creating a note with the correct start date
+                let baseNote = Note(note: originialNote)
+                baseNote.activationDate = thisDate
+                baseNote.identity = returnOpenNoteIdentity()
+                updateNoteIdentity(note: baseNote)
+                
+                //creating new RepeatingNote
+                let notesArray: [Note] = [baseNote]
+                
+                let newRepeatingNote = RepeatingNote(components: components, repeatIdentity: repeatIdentity, notes: notesArray, parent: self)   //remember that all of these should have the same identity
+                newRepeatingNote.selectedButtons = weekDayButtons
+                repeatingNotes.append(newRepeatingNote)
+                
+            }
+            
+            
+        }
+        
+    }
+    
+    /*
+     This method will return true/false for whether or not there are multiple repeatingNotes with this identity.
+     When the user selects to make a RepeatingNote starting that runs every monday, wednesday, and thursday, that's handles by creating 3 different but related RepeatingNotes that trigger once a week, each with one of those weekdays.  But they all have the same identity.  That is what this method checks for.
+    */
+    func multipleRepeatingNotesForIdentity(repeatIdentity: Int) -> Bool {
+        
+        var occurences: Int = 0
+        
+        for repeatingNote in repeatingNotes {
+            if (repeatingNote.repeatIdentity == repeatIdentity) {
+                occurences += 1
+            }
+        }
+        
+        if (occurences > 1) {
+            return true
+        } else {
+            return false
+        }
+        
+    }
+    
     //MARK: Methods to do with saving and loading
     
     private func saveNotes() {
@@ -1014,6 +1388,12 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
     }
     
+    private func saveRepeatingNotes() {
+        
+        NSKeyedArchiver.archiveRootObject(repeatingNotes, toFile: RepeatingNote.ArchiveURL.path)
+        
+    }
+    
     private func loadNotes() -> [Note]? {
         
         return NSKeyedUnarchiver.unarchiveObject(withFile: Note.NotesArchiveURL.path) as? [Note]
@@ -1029,6 +1409,12 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     private func loadHeaders() -> [Header]? {
         
         return NSKeyedUnarchiver.unarchiveObject(withFile: Header.ArchiveURL.path) as? [Header]
+        
+    }
+    
+    private func loadRepeatingNotes() -> [RepeatingNote]? {
+        
+        return NSKeyedUnarchiver.unarchiveObject(withFile: RepeatingNote.ArchiveURL.path) as? [RepeatingNote]
         
     }
     
