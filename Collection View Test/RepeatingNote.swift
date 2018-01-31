@@ -126,8 +126,12 @@ class RepeatingNote: NSObject, NSCoding {
     
     /*
      this method will be called whenever the "repeat" button in any of the notes in this thing is unselected, and so we will delete every note past the one that triggered the deletion.
+     repeatButtonRemainder is used to decide whether or not to set the notes that aren't deleted to have their repeat butotn checked or not.  In case of editing the RepeatingNote, we'll set it to remain true.  When simply deleting the entire RepeatingNote, we'll set it to false
     */
-    func delete(fromNote: Note) {
+    func delete(fromNote: Note, repeatButtonRemainder: Bool) {
+        
+        print("in RepeatingNote, running delete method")
+        print("in RepeatingNote, deletng all after date " + (fromNote.activationDate?.description)!)
         
         let toDeleteFrom = fromNote.activationDate
         
@@ -137,6 +141,7 @@ class RepeatingNote: NSObject, NSCoding {
             //if this notes activation date lies after the date to delete from
             if (note.activationDate?.compare(toDeleteFrom!) == .orderedDescending) {
                 
+                print("about to delete note in parent")
                 parent?.deleteNote(toDelete: note)  //delete note in parent
                 
                 for index in 0...identitiesOfNotes.count-1 {    //delete note here
@@ -147,7 +152,7 @@ class RepeatingNote: NSObject, NSCoding {
                 }
                 
             } else {
-                note.hasRepeat = false
+                note.hasRepeat = repeatButtonRemainder;    //using repeatButtonRemainder to set .hasRepeat value of surviving notes
             }
             
         }
@@ -155,6 +160,8 @@ class RepeatingNote: NSObject, NSCoding {
         fillNotesFromIdentitiesOfNotes()
         lastNote = fromNote     //since true lastNote has been deleted
         self.active = false
+        
+        print("in RepeatingNote, delete method finished running")
         
     }
     
@@ -180,6 +187,8 @@ class RepeatingNote: NSObject, NSCoding {
     */
     func edit(newComponents: DateComponents) {
         
+        print("in RepeatingNote, running edit() method")
+        
         var uncheckedNotes = [Note]()
         var earliestNote: Note
         
@@ -192,18 +201,19 @@ class RepeatingNote: NSObject, NSCoding {
         
         earliestNote = uncheckedNotes.last!   //setting earliestNote to hold a random uncheckedNote, which one dosen't matter
         
-        
         //finding earliest unchecked note
         for note in uncheckedNotes {
-            //if this note lies after (farther in the future) then the earliest note
-            if (note.activationDate?.compare(earliestNote.activationDate!) == .orderedDescending) {
+            //if this note's date lies before the date of the earliest note
+            if (note.activationDate?.compare(earliestNote.activationDate!) == .orderedAscending) {
                 earliestNote = note
             }
         }
         
-        delete(fromNote: earliestNote)
+        delete(fromNote: earliestNote, repeatButtonRemainder: true)  //MARK: Location
         components = newComponents
         createNextNote(currentNote: earliestNote)
+        
+        print("in RepeatingNote, edit() method finished running")
         
     }
     

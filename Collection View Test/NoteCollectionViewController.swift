@@ -296,7 +296,7 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
             //checking what, if any, work should be done concerning a RepeatingNote
             if (sourceViewController.repeatButton.isSelected && newNote?.repeatIdentity != nil) {   //an existing RepeatingNote may of been edited or reactivated
                 
-                print("2, this RepeatingNote it to be edited or reactivated")
+                print("2, this RepeatingNote is to be edited or reactivated")
                 
                 let newComponents = sourceViewController.components
                 let thisRepeatingNote = findRepeatingNoteWithidentity(identity: (newNote?.repeatIdentity)!)
@@ -710,15 +710,7 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
      */
     func createHeadersSystem() {
         
-        /*
-         Will take the value of var. headersSystem to determine how the headers that hold dates with notes will be organized
-         if var. headersSystem equals...
-         1 - today-tommorrow-this week-additional
-         */
-        /*
-         Is an unimportant feature and so skipped implementation, will implement later
-         */
-        
+        //Will in future add ability to have multiple different header systems one can choose between.  Thats why this is a switch statement
         switch headersSystem {
             
         case 1?:
@@ -1243,6 +1235,7 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
     */
     func deleteNote(toDelete: Note) {
         
+        print("about to delete a note in main.  text: " + toDelete.text + ", activation date: " + (toDelete.activationDate?.description)!)
         for index in 0...notes.count-1 {
             if (notes[index].identity == toDelete.identity) {
                 notes.remove(at: index)
@@ -1259,7 +1252,7 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
         for repeatingNote in repeatingNotes {
             if (repeatingNote.repeatIdentity == repeatIdentity) {
-                repeatingNote.delete(fromNote: fromNote)
+                repeatingNote.delete(fromNote: fromNote, repeatButtonRemainder: false)
                 print("repeatingNotes[index].active: \(repeatingNote.active)")
             }
         }
@@ -1275,7 +1268,7 @@ class NoteCollectionViewController: UICollectionViewController, UICollectionView
         
         for index in 0...repeatingNotes.count {
             if (repeatingNotes[index - indexCorrection].repeatIdentity == repeatIdentity) {
-                repeatingNotes[index].delete(fromNote: fromNote)
+                repeatingNotes[index].delete(fromNote: fromNote, repeatButtonRemainder: false)
                 repeatingNotes.remove(at: index - indexCorrection)
                 indexCorrection -= 1
                 
