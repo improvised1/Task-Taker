@@ -14,7 +14,6 @@ class NoteViewController: UIViewController, UITextFieldDelegate {
     //MARK: Properties
     @IBOutlet weak var saveButton: UIBarButtonItem!
     @IBOutlet weak var nameTextField: UITextField!
-    @IBOutlet weak var repeatButton: UIButton!
     @IBOutlet weak var datePickerButton: UIButton!
     @IBOutlet weak var datePicker: UIDatePicker!
     var note: Note?     //will only be updated if the user clicks save
@@ -53,10 +52,6 @@ class NoteViewController: UIViewController, UITextFieldDelegate {
         datePickerButton.setImage(#imageLiteral(resourceName: "emptyCheckbox"), for: UIControlState.normal)
         datePickerButton.setImage(#imageLiteral(resourceName: "filledCheckbox"), for: UIControlState.selected)
         datePickerButton.isSelected = hasDate!
-        
-        repeatButton.setImage(#imageLiteral(resourceName: "emptyCheckbox"), for: UIControlState.normal)
-        repeatButton.setImage(#imageLiteral(resourceName: "filledCheckbox"), for: UIControlState.selected)
-        repeatButton.isSelected = hasRepeat!
         
         //updating datePicker
         if (hasDate)! {
@@ -170,14 +165,6 @@ class NoteViewController: UIViewController, UITextFieldDelegate {
     //will activate whenever the value in datePicker is changed, and will change var. activationDate to match that date
     @IBAction func dateChanged(_ sender: UIDatePicker) {
         activationDate = datePicker.date
-    }
-    
-    //will activate when repeatButton is clicked
-    @IBAction func repeatButtonSelected(_ sender: Any) {
-        
-        repeatButton.isSelected = !repeatButton.isSelected
-        hasRepeat = repeatButton.isSelected
-        
     }
     
     //will activate when the datePickerButton is clicked
